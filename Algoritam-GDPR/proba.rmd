@@ -1,0 +1,42 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+IsDate <- function(mydate, date.format = "%d/%m/%y") {
+
+  tryCatch(!is.na(as.Date(mydate, date.format)),  
+           error = function(err) {FALSE})  
+}
+
+is.Date(02/10/1987)
+is.Date("1987-12-08")
+read.table("proba.txt", header = TRUE, sep = "")
+
+putanja<-"proba.txt"
+tekst<-read_file(putanja)
+tekst
+grep("vlaho", tekst)
+uzorak="vlaho3"
+str_detect(tekst,paste0("\\b",uzorak,"\\b"))
+str_detect(tekst, "\\b" uzorak "\\b")
+
+
+tagovi<-list()
+tagovi
+
+ifelse(str_detect(Dokument$tekst ,paste0("\\b","\\d{11}","\\b")), tagovi[["tagOib"]]<- TRUE,  tagovi[["tagOib"]]<- FALSE)
+    
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

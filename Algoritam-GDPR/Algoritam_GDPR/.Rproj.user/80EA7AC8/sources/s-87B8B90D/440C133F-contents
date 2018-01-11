@@ -1,0 +1,644 @@
+---
+title: "10 rad sa datumima i znakovnim nizovima"
+author: "Damir Pintar"
+date: "24. kolovoz 2017"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(results = 'hold')
+```
+
+***
+
+
+## Rad sa datumima
+
+
+Programski jezik R ima tri klase za upravljanje datumima / vremenskim oznakama:
+
+-`Date` za prikaz datuma
+-`POSIXct` za kompaktni prikaz vremenske oznake
+- `POSIXlt` za "dugi" prikaz vremenske oznake (u obliku liste)
+
+### Klasa `Date`
+
+Klasu Date koristimo kada nas zanima datum ali ne i vrijeme neke obzervacije ili poslovnog događaja. Ova klasa nema svoj konstruktor, već objekte ovog tipa (najčešće) stvaramo uz pomoć sljedećih funkcija:
+
+- `Sys.Date()` koja vraća današnji datum
+- `as.Date()` kojoj kao parametar prosljeđujemo znakovni niz koji reprezentira datum
+
+Funkcija `as.Date()` po *default*-u prihvaća datume oblika `%Y-%m-%d`, gdje `%Y` predstavlja četveroznamenkastu godinu a `%m` i `%d` dvoznamenkasti mjesec i dan. Ukoliko želimo interpetirati datum koji je zapisan u nekom drugom obliku onda moramo funkciji dodati parametar format koji će parametarski opisati oblik kojeg koristimo (npr. za `28/10/1978` bi vrijednost parametra format trebala biti `%d/%m/%Y`). Sve moguće oblikovne specifikacije mogu se pogledati uz pomoć naredbe `?strptime` iako, kao što ćemo se uvjeriti kasnije, jednostavnija metoda jest koristiti se funkcijama paketa `lubridate`.
+
+***
+
+## ZADATAK 10.1 - klasa `Date`
+
+```{r}
+# ispišite današnji datum
+Sys.Date()
+
+# pretvorite sljedeće znakovne nizove u objekt tipa `Date` i ispišite rezultat na zaslon:
+# '1986-12-27','2016-31-05', '17. 10. 2015.', '01#01#2001'
+
+as.Date("1986-12-27")
+as.Date("2016-31-05",format='%Y-%d-%-m')
+as.Date("17. 10. 2015.",format='%d. %m. %d. ')
+as.Date("'01#01#2001",format='%d#%m#%d#')
+
+```
+formt='%Y-%m-%-d'
+
+***
+
+Sa datumima možemo raditi jednostavne računske operacije kao što je dodavanje i oduzimanje dana (koristimo operatore + i - i cijele brojeve) ili razliku u danima između dva datuma (operator -).
+
+***
+
+## ZADATAK 10.2 - aritmetika s datumima
+
+```{r}
+# ispišite koji je datum bio 1000 dana prije današnjeg datuma
+
+100+Sys.Date()
+
+# dodajte jedan dan datumima 28.2.2015. i 28.2.2016 i ispišite rezultat
+
+1+as.Date('2015-02-28')
+1+as.Date('2016-02-28')
+
+# ispišite koliko je dana prošlo od 1.1.2000. do danas
+
+#DOVRIŠITIIIII
+```
+
+
+
+***
+
+
+Zadnji izraz će zapravo rezultirati objektom klase `difftime` koja označava vremenski interval. Ispis koristi tzv. "automatski" odabir jedinice (konkretno, parametar units postavljen na `"auto"`) koji će pokušati odabrati najprikladniju vremensku jedinicu za ispis. Ukoliko želimo eksplicitno odabrati koju vremensku jedinicu želimo (sekunde, minute, sate, dane ili tjedne) onda možemo umjesto operatora `-` koristiti funkciju `difftime` uz parametar `units` postavljen na znakovni niz odabrane vremenski jedinice (`"seconds"`, `"minutes"`, itd.).
+
+***
+
+## ZADATAK 10.3 - funkcija `difftime`
+
+
+```{r}
+# Koliko je prošlo tjedana između 1.3.2016. i 1.3.2015.?
+# koristite funkciju `difftime`
+# NAPOMENA: ne morate eksplicitno pozvati funkciju `as.Date`, funkcija `difftime`
+#       će to sama učiniti ako pošaljete datum u default-nom obliku
+
+# koliko je prošlo sati od 1.3.2015. do danas?
+
+difftime('2016-03-01','2015-03-01',units = "weeks")
+difftime(Sys.Date(),'2015-03-01',units = "hours")
+
+
+```
+
+
+***
+
+
+Funkcija `difftime` zapravo radi i sa vremenskim oznakama (tj. ne moramo nužno raditi na razini datuma, već se možemo spustiti do razine sekunde). Ovo ćemo isprobati kada naučimo klasu `POSIXct` u nastavku. Isto tako, ako nam treba samo broj (sekundi, sati, dana i sl.), lako se poslužimo funkcijom `as.numeric`.
+
+Jezik R implementira i posebnu varijantu funkcije `seq` za rad sa datumima koja ima sljedeći potpis:
+
+```{r, eval = F}
+
+seq(from, to, by, length.out = NULL, along.with = NULL, ...)
+
+```
+
+
+Parametri ove funkcije su sljedeći:
+
+- `from` - početni datum (obvezni parametar)
+- `to` - konačni datum
+- `by` - korak sekvence u danima ili znakovni niz tipa `"7 days"`, `"2 weeks"` i sl. (za sve mogućnosti pogledati dokumentaciju!)
+- `length.out` - duljina sekvence
+- `along.with` - vektor čiju duljinu uzimamo za referencu
+
+Isprobajmo ovu funkciju.
+
+***
+
+## ZADATAK 10.4 - funkcija `seq` i datumi
+
+```{r}
+# ispišite sekvencu datuma od 1.1.2010. do 1.1.2030. u koracima od 6 mjeseci
+
+
+seq(as.Date('2010-01-01'),as.Date('2030-01-01'), by="6 months")
+
+
+# napravite raspored čišćenja zajedničkih prostora za stambenu zgradu
+# prostori se moraju čistiti svaka 3 tjedna
+# svaki stan mora imati svoj datum čišćenja
+
+# stanovi su opisani sljedećim podatkovnim okvirom
+stanovi <- data.frame(broj_stana = 1:10,
+                      prezime = c("Ebert", "Ladovac", "Cerić", "Dikla", "Anić",
+                                  "Perić", "Žužić", "Babić", "Ibiz", "Radler"))
+
+# dodajte stupac `ciscenje` sa po jednim datumom za svaki pojedini stan 
+# redom po brojevima stana, počevši od današnjeg datuma
+
+sey(Sys.Date, by="3 weeks", along.with=stanovi$broj_stana) %>% as.character() -> stanovi$ciscenje)   
+#????????????????? DOVRŠITIIIIIIIIIIII
+
+# ispisite podatkovni okvir `stanovi` (koristite `print` ili pretvorite datume u znakovni stupac)
+
+```
+
+
+
+***
+
+### Klase `POSIXct` i `POSIXlt`
+
+Klasa `POSIXct` nam je pogodna kada nam nije dosta samo pohraniti datum, već moramo znati i točno vrijeme za neku obzervaciju ili poslovni događaj. Objekt ove klase najčešće stvaramo uz pomoć sljedećih funkcija:
+
+- `Sys.time()` koja vraća trenutnu vremensku oznaku uzimajući u obzir postavljenu vremensku zonu
+- `as.POSIXct()` kojoj kao parametar prosljeđujemo znakovni niz koji predstavlja datum i vrijeme
+
+Funkcija `as.POSIXct()` kao parametar očekuje vremensku oznaku tipa `%Y-%m-%d %H:%M:%S` gdje su prve tri oblikovne specifikacije istovjetne već poznatoj specifikaciji datuma, dok `%H`, `%M` i `%S` predstavljaju dvoznamenkaste sate, minute i sekunde (gleda se 24-satni oblik prikaza vremena). Za parsiranje drugih oblika vremenskih oznaka potrebno je - kao i kod klase `Date` - dodati parametar format sa oblikovnom specifikacijom kako intepretirati zadani znakovni niz. Opet, tu nam pomaže funkcija `?strptime` iako je poželjna opcija za lakši rad proučiti paket `lubridate` kojeg ćemo raditi kasnije. Funkciji `as.POSIXct` možemo dodati i parametar `tz` postavljen na znakovni niz koji definira vremensku zonu.
+
+***
+
+## ZADATAK 10.5 - klasa `POSIXct`
+
+```{r}
+# ispišite trenutni datum i  vrijeme
+Sys.time()
+
+# pretvorite sljedeće znakovne nizove u vremenske oznake i ispišite ih na zaslon:
+# "2015-10-28 15:30:42"
+
+as.POSIXct('2015-10-28 15:30:42')
+
+# "01-12-2001 14:30"   <-- oznaka očitana u New York-u, SAD, vremenska zona EST
+
+as.POSIXct('01-12-2001 14:30', format("%d-%m-%Y %H:%m"))
+
+```
+
+
+***
+
+Imena vremenskih zona su standardizirana (tzv. "Olsonove vremenske zone") a dohvaćaju se uz pomoć operativnog sustava a možemo ih ispisati uz pomoć funkcije `OlsonNames()`. Trenutnu vremensku zonu platforme možemo ispisati uz pomoć funkcije `Sys.timezone()`.
+
+***
+
+## ZADATAK 10.6 - vremenske zone
+
+```{r}
+Sys.timezone()
+# ispišite trenutnu vremensku zonu
+
+rand
+
+# ispišite 10 nasumično odabranih oznaka vremenskih zona instaliranih na trenutnoj platformi
+```
+
+***
+
+Vremenske oznake također mogu koristiti operatore `+` i `-` uz cjelobrojne vrijednosti kao drugi operand pri čemu se od vremenske oznake oduzimaju ili dodaju sekunde. Isto tako, možemo oduzimati dvije vremenske oznake kako bi dobili razliku u sekundama, ili koristiti funkciju `difftime` sa odabranom vrijednosti vremenske jedinice.
+
+***
+
+## ZADATAK 10.7 - aritmetika sa vremenskim oznakama
+
+```{r}
+# ispišite koje će biti vrijeme 1000 sekundi od ovog trenutka
+Sys.time() + 1000
+
+# ispišite koliko je prošlo sati od ponoći 1.1.2015. do sad
+
+
+```
+
+
+***
+
+Klasa `POSIXlt` se ponaša isto kao i `POSIXct` (za stvaranje se koristimo funkcijom `as.POSIXlt`), no zapravo se radi o listi koja nam omogućuje jednostavno izvlačenje određenih parametara iz vremenske oznake, kao što su broj sekundi, broj minuta, dan u tjednu i sl. Sve elemente liste lako možemo vidjeti ako napravimo `POSIXlt` objekt i onda pozovemo funkciju unclass nad njim, pri čemu će se on pretvoriti u "običnu" listu. Možemo ići i korak dalje - ako listu ubacimo u funkciju unlist, kao rezultat dobivamo obični znakovni vektor.
+
+***
+
+## ZADATAK 10.8 - klasa `POSIXlt`
+
+
+```{r}
+# pretvorite sljedeći znakovni niz u vremensku oznaku tipa `POSIXlt`
+# pohranite rezultat u varijablu `t_long`
+# "1.5.2013 13:35"
+t_long<-as.POSIXlt("1.5.2013 13:35", format="%d.%.m%Y %H:%M")
+t_long
+
+
+
+# ispišite broj sati i broj minuta vremenske oznake `t_long`
+# ispisom njenih atributa naziva `hour` i `min`
+t_long$hour
+t_long$min
+
+# pretvorite varijablu `t_long` u znakovni vektor i ispišite rezultat
+# obavite sve u jednoj naredbi uz pomoć operatora %>% 
+
+```
+
+
+
+
+***
+
+
+### Paket `lubridate`
+
+Iako jezik R ima relativno dobru podršku za rad sa datumima i vremenskim oznakama, upravljanje istima možemo učiniti znatno učinkovitijim uz paket lubridate. Ukoliko analiziramo podatke gdje je vremenska komponenta jako bitna, ili upravljamo podatkovnim skupovima koji koriste različite oblike zapisa datuma i vremenskih oznaka, onda si proces analize uvelike olakšavamo i ubrzavamo korištenjem funkcija iz ovog paketa.
+
+Jedna od stvari koja je možda najkorisnija programerima koji ne vole pisati oblikovne specifikacije za parsiranje datuma je porodica funkcija za parsiranje datuma čija imena odgovaraju okvirnom izgledu zapisa kojeg želimo parsirati. Npr. funkcija imena `ymd` zna parsirati znakovne nizove u kojima je datum zapisan redoslijedom godina-mjesec-dan. Funkcija je dovoljno "pametna" da sama interpetira pojedinosti oko zapisa, kao što su delimiteri, znakovna polja i sl. Ukoliko zapis ima drugi raspored dana, mjeseca i godine, potrebno je samo adekvatno razmjestiti slova u nazivu funkcije.
+
+***
+
+## ZADATAK 10.9 - funkcije paketa `lubridate` za parsiranje datuma`
+
+```{r}
+# library(lubridate)   #učitati ako je potrebno!
+
+
+# koristeći se funkcijama iz paketa `lubridate`
+# parsirajte  u datume i ispišite sljedeće znakovne nizove
+#  "2016-07-31"
+ymd("2016-07-31")
+
+#  "28.2.1983."
+
+
+
+
+#  "07#31#1996"
+#  "20010830"
+
+```
+
+
+***
+
+
+Navedeni koncept može se koristiti i za vremenske oznake, samo imenu funkcije dodamo podcrtu i "specifikaciju" sati, minuta i sekundi (npr. `ymd_hms`).
+
+***
+
+## ZADATAK 10.10 - funkcije paketa `lubridate` za parsiranje vremenskih oznaka
+
+```{r}
+# koristeći se funkcijama iz paketa `lubridate`
+# parsirajte u vremenske oznake i ispišite sljedeće znakovne nizove
+# "17.5.1977. 10:15pm"
+
+dmy_hm("17.5.1977. 10:15pm")
+# "20160429 10.05.17"
+
+ymd("20160429 10.05.17")
+
+#DOVRŠITIII
+
+```
+
+
+***
+
+Iako su ove funkcije paketa lubridate sposobne uspješno parsirati različite oblike datuma, uvijek je dobro provjeriti krajnji rezultat kako bi bili sigurni da nije došlo do neočekivanih rezultata (pogotovo ako radimo sa nekim iznimno egzotičnim načinima zapisa datuma i vremena).
+
+Paket lubridate također uvelike olakšava izvlačenje segmenata datuma i vremena iz vremenskih oznaka uz pomoć funkcija kao što su `year`, `week`, `month` i sl. Uz pomoć istih funkcija možemo lako i izmjeniti neku od komponenti vremena.
+
+***
+
+## ZADATAK 10.11 - izvlačenje elemenata vremenskih oznaka
+
+```{r}
+x <- dmy_hms("19.7.1996. 16:15:27")
+
+# iz gornje vremenske oznake izvucite i ispišite sate i minute
+hour(x)
+min(x)
+
+# postavite godinu gornje vremenske oznake na 2011., a mjesec na lipanj
+
+# ispišite `x`
+```
+
+
+
+***
+
+Za potpuni popis funkcija pogledajte dokumentaciju paketa `lubridate`.
+
+Za trenutni datum i vrijeme lubridate nudi alternative funkcijama `Sys.Date()` i `Sys.time()` koje se jednostavno zovu `today()` i `now()`.
+
+***
+
+## ZADATAK 10.12 - funkcije `today` i `now`
+
+
+```{r}
+# ispišite sutrašnji datum
+today()
+
+# ispišite koliko je bilo sati, minuta i sekundi prije točno sat vremena
+now() - 60*60
+
+```
+
+
+
+***
+
+Već smo rekli da upravljanje vremenskom komponentom u podacima može postati vrlo kompleksno, pogotovo ako uzmemo u obzir da vremenski intervali mogu biti zadani generički (npr. "2 godine") ili konkretno (raspon između dva datuma) te da se matematički i kalendarski način računanja vremena često ne poklapaju (npr. "za godinu dana" može značiti točan matematički izračun sekundi u 365 dana, ili kalendarski "isti datum iduće godine").
+
+Paket `lubridate` definira četiri mogućnosti kod definiranja vremena i vremenskih intervala:
+
+- trenutak (*instant*) - vremenska oznaka zaokružena na sekundu
+- trajanje (*duration*) - "generički" definiran interval u sekundama
+- period - slično trajanju, ali omogućuje definiranje trajanja koja matematički ne traju uvijek isto (npr. "3 mjeseca")
+- interval - vrijeme omeđeno između dva točno određena trenutka
+
+Trenutke smo već upoznali, to su vremenske oznake koje smo do sada stvarali. Za stvaranje trajanja i perioda imamo intuitivno definirane funkcije koje se nazivaju po engleskim nazivima za vremenske jedinice, pri čemu trajanja imaju dodano slovo d kao prefiks (od *duration*). Tako imamo funkcije `minutes` i `dminutes`, `hours` i `dhours`, `weeks` i `dweeks` i sl. (uočite da ne postoji funkcija `dmonths`, budući da "mjesec dana" ne možemo jednoznačno pretvoriti u sekunde!).
+
+***
+
+## ZADATAK 10.13 - trajanja i periodi
+
+```{r}
+# ispišite trajanje i period od 3 tjedna
+
+# u varijablu `v` upišite period od 5 godina, 3 mjeseca i 2 dana
+
+# dodajte gornji period današnjem datumu
+```
+
+
+
+***
+
+Uočite da gornji izraz nismo lako mogli dobiti "matematički".
+
+Konačno, interval stvaramo uz pomoć funkcije interval kojoj dajemo početni i konačni trenutak, ili uz pomoć funkcije `as.interval` kojoj dajemo trajanje/period i počeni trenutak. Možemo također koristiti i operator `%--%` sa dvije vremenske oznake (tj. trenutka) kao operandima.
+
+***
+
+## ZADATAK 10.14 - intervali
+
+```{r}
+# stvorite varijablu `interval1` koja će pohraniti interval od 6 mjeseci prije današnjeg dana
+# do 6 mjeseci iza današnjeg dana
+
+# stvorite varijablu `interval2` koja će pohraniti interval od današnjeg dana
+# do datuma koji će se dogoditi za 6 mjeseci, 3 tjedna i 2 dana
+
+# stvorite varijablu `interval3` koja će pohraniti interval 
+# od 1.5.2002. do 1.7.2002.
+
+# ispišite sva tri intervala
+
+```
+
+
+
+***
+
+
+Kod intervala je zgodno što između ostalog možemo:
+
+- provjeriti da li se neki trenutak nalazi unutar nekog intervala uz pomoć operatora `%within%`
+- provjeriti da li se intervali preklapaju uz pomoć funkcije `int_overlaps()`
+- lako dohvatiti početak i kraj intervala uz pomoć funkcija `int_start()` i `int_end`
+- "spojiti" dva intervala uz pomoć funkcije `union` ili naći presjek uz pomoć funkcije `intersect`
+- brojne druge mogućnosti koje možemo naučiti gledajući dokumentaciju
+
+***
+
+## ZADATAK 10.15 - pomoćne funkcije za rad sa intervalima
+
+```{r}
+# provjerite da li je današnji dan unutar intervala definiranog varijablom `interval1`
+
+# ukoliko se `interval1` i `interval2` preklapaju
+# ispišite njihov presjek
+
+```
+
+
+
+***
+
+U ovom dijelu upoznali smo se sa jednim dijelom funkcionalnosti koje nude klase za upravljanje datumima i vremenskim oznakama jezika R te paket `lubridate`. Za dodatne informacije pogledajte službenu dokumentaciju jezika R i paketa `lubridate`, a dobar izvor je i članak *"Dates and Times Made Easy with lubridate"* kojeg je napisao sam autor paketa Hadley Wickham a koji je dostupan na <a href = "https://www.jstatsoft.org/article/view/v040i03/v40i03.pdf">ovoj poveznici</a>.
+
+## Rad sa znakovnim nizovima
+
+*R* ima jako dobru podršku za rad sa znakovnim nizovima, no funkcije koje nudi osnovni R nisu intuitivne niti konzistentne ako ih uspoređujemo sa sličnim funkcijama u drugim programskim jezicima. 
+
+Upravo iz ovih razloga pojavio se paket `stringr` koji nudi vrlo učinkovitu alternativu postojećim funkcijama vezanih uz znakovne nizove te predstavlja jedan od najpopularnijih "dodatnih" R paketa. No prije upoznavanja sa funkcijama koje nudi ovaj paket potrebno je kratko se osvrnuti na općenitu problematiku upravljanja znakovnim nizovima u analizi podataka te na tehnologiju bez koje je provedba analize znakovnih nizova gotovo nezamisliva - tzv. regularni izrazi.
+
+### Analiza teksta i regularni izrazi
+
+
+Sljedeća tablica daje kratki pregled nekih češće korištenih elemenata regularnih izraza u jeziku *R*:
+
+
+Element  | 	Značenje
+------|-----------------------
+`abcd` | 	niz slova "abcd"
+`1234` | 	niz znamenki "1234"
+`\\d` ili `[:digit:]`  | ili `[0-9]`	bilo koja znamenka
+`\\D` ili `[:alpha:]` |  ili `[A-Za-z]`	bilo koje slovo
+`[:alnum:]`	 | bilo koje slovo ili znamenka
+`.`	 | bilo koji znak
+`\\.`	 | točka
+`[abc]` | 	samo navedeni znakovi
+`[^abc]` | 	svi znakovi osim navedenih
+`*`	 | nula ili više ponavljanja
+`+`	 | jedno ili više ponavljanja
+`{n}`	 | točno n ponavljanja
+`{m, n}`	 | najmanje m, najviše n ponavljanja
+`?`	 | opcionalni znak
+`[:space:]` ili `\\s` | 	bilo kakva praznina
+`[:punct:]`	 | znakovi interpunkcije
+`^...$`	 | oznaka za početak i kraj
+`(ab|cd)`	 | niz "ab" ili niz "cd"
+
+Uočite da kod korištenja specijalnog znaka `\` zapravo moramo koristiti "dvostruki znak" `\\` (prvi put da naznačimo *R*-u da se radi o specijalnom znaku, drugi put da ga doslovno upotrijebimo kao dio regularnog izraza).
+
+Osnovne funkcije jezika *R* za rad sa znakovnim nizovima (a time i regularnim izrazima) su između ostalog `grep`, `grepl`, `regexrp`, `gregexrp`, `regmatches`, `sub`, `gsub` itd. No budući da paket stringr nudi skup alternativnih funkcija sa gotovo istim funkcionalnostima ali uz daleko intuitivnija imena i konzistentnije potpise, mi ćemo se usredotočiti na upravo te funkcije a učenje osnovnih ostavljamo čitateljima koji žele upotpuniti svoje znanje učenjem svih dostupnih alata koje nudi jezik *R*.
+
+### Paket `stringr`
+
+
+
+Možemo početi sa nekim jednostavnijim funkcijama za koje ne trebamo regularne izraze (navodimo pojednostavljene potpise funkcija, za potpune pogledajte dokumentaciju):
+
+- `str_c(string1, string2, ...)` - spajanje znakovnih nizova, alternativa funkciji paste0
+- `str_length(string)` - vraća duljinu znakovnog niza
+- `str_sub(string, start, end)` - vraća podniz
+- `str_sub(string, start, end) <- string2` - umetanje novog podniza (ne mora biti iste duljine kao izbačeni podniz!)
+- `str_trim(string)` - uklanjanje praznina s početka i kraja niza
+
+
+***
+
+## ZADATAK 10.16 - osnovne funkcije za rad sa znakovnim nizovima
+
+
+```{r}
+niz1 <- "        Ovo je primjer "
+niz2 <- "spajanja nizova!       "
+
+# uz pomoć jedne naredbe spojite gornje nizove, potom
+# iz rezultata uklonite praznine s početka i kraja niza,
+# zatim izdvojite podniz od 8. do 23. znaka te konačni rezultat ispišite na zaslon
+
+str_c(niz1,niz2)%>%str_trim()%>%str_sub(8,23)
+
+niz <- "R je pretjerano kompliciran i nimalo lagan jezik!"
+
+# u gornjem nizu znakova zamjenite sve od 9. znaka (brojeno od početka)
+# do 13. (brojeno od kraja) sa praznim nizom 
+
+str_sub(niz,9,-13)<-""
+
+# ispišite niz
+niz
+
+```
+
+***
+
+
+Funkcija `str_c` ima i parametar sep za dodavanje separatora, te parametar collapse za spajanje elemenata znakovnog vetora u jedinstveni niz uz vrijednost parametra kao separator.
+
+
+***
+
+## ZADATAK 10.17 - spajanje znakovnih nizova
+
+
+```{r}
+
+niz1 <- "Za spajanje"
+niz2 <- "ovih nizova"
+niz3 <- "potreban je razmak!"
+
+# spojite gornje nizove u jedinstveni niz i ispišite rezultat
+str_c(niz1,niz2,niz3)
+
+nizovi <- c("A", "ovi", "nizovi", "su", "elementi", "vektora...")
+
+# spojite elemente gornjeg vektora u jedan niz i ispišite rezultat
+#dovršitiiiiiiiiiiiii!
+
+```
+
+
+
+***
+
+Pogledajmo sada neke funkcije koje rade sa regularnim izrazima:
+
+- `str_detect(string, pattern)` - vraća `TRUE` ako niz sadrži uzorak, inače `FALSE`
+- `str_extract(string, pattern)` - vraća niz znakova koji odgovara prvoj pojavi uzorka
+- `str_extract_all(string, pattern)` - vraća listu sa svim pojavama koje odgovaraju uzorku
+- `str_replace(string, pattern, replacement)` - mijenja prvu pojavu uzorka sa zadanim novim nizom
+- `str_replace_all(string, pattern, replacement)` - mijenja sve pojave uzorka sa zadanim novim nizom
+
+Sve ove funkcije su vektorizirane, tj. ponašaju se logično (tj. "paralelizirano") kad im kao određeni parametar pošaljemo vektor - npr. ako funkciji str_replace pošaljemo vektor znakovnih nizova i vektor "zamjena", svaka prva pojava uzorka biti će zamjenjena odgovarajućim elementom u poretku zamjena. Za detalje oko ovakvog proširenog korištenja uputno je pogledati dokumentaciju.
+
+***
+
+## ZADATAK 10.18 - funkcije i regularni izrazi
+
+```{r}
+adrese <- c("pero.peric@fer.hr", "iva.ivic@etfos.hr", "ppetrovic@gmail.com", 
+            "branko1987@yahoo.com", "jaRULZ4EVR@gmail.nz", "dperkovic@efzg.hr", 
+            "lalaic1998@gmail.co.uk", "perica.markic@fer.hr")
+
+# prebrojite i ispišite koliko u gornjem popisu ima mail adresa iz domene `fer.hr`
+sum(str_detect(adrese, "fer.hr"))
+
+
+# ispišite sve adrese koje sadrže bar jednu znamenku
+
+str_detect(adrese,"\\d")%>%adrese[.]
+
+# ispišite sve adrese koje na drugom mjestu imaju samoglasnik
+
+str_detect(adrese,"^.[aeiou]")%>%adrese[.]
+
+# ispišite sve jedinstvene domene adresa elektroničke pošte iz gornjeg niza adresa
+# (domenom smatramo dio adrese iza znaka `@`)
+
+unique( str_extract_all(adrese,"@.*"))
+# anonomizirajte gornje adrese: niz znakova ispred znaka '@'
+# zamijenite nasumičnim šesteroznamenkastim prirodnim brojem 
+
+sample(1000000:999999,length(adrese)) %>% as.character %>% str_replace(adrese, '^[^@]*', .)
+```
+
+
+***
+
+
+Konačno, naučimo jednu relativno korisnu funkciju nazvanu `str_split`. Ova funkcija rastavlja znakovni niz na vektor znakovnih nizova, ovisno o danom separatoru (koji može biti razmak, neki odabrani znak ali i regularni izraz), a često se koristi kao "primitivnija" alternativa funkcijama `read.csv` i `read.table` kada ulazne podatke želimo "ručno" rastaviti i parsirati, ili za analizu teksta kada paragrafe teksta "razbijamo" na pojedinačne riječi. Ova funkcija pretpostavlja da ćemo joj proslijediti niz znakovnih nizova za rastavljanje te nam kao rezultat vraća listu; ukoliko rastavljamo samo jedan niz, lako rezultat pretvaramo u vektor korištenjem funkcije unlist.
+
+Pokažimo sada jedan vrlo jednostavni primjer analize teksta. Izračunati ćemo frekvenciju pojave različitih u riječi u sljedećem paragrafu teksta.
+
+## ZADATAK 10.19 - jednostavna analiza teksta
+
+```{r}
+tekst <- "In a hole in the ground there lived a hobbit. Not a nasty, 
+dirty, wet hole, filled with the ends of worms and an oozy smell, nor 
+yet a dry, bare, sandy hole with nothing in it to sit down on or to eat; 
+it was a hobbit-hole, and that means comfort.
+
+It had a perfectly round door like a porthole, painted green, with a shiny 
+yellow brass knob in the exact middle. The door opened on to a tube-shaped hall 
+like a tunnel: a very comfortable tunnel without smoke, with paneled walls, and 
+floors tiled and carpeted, provided with polished chairs, and lots and lots 
+of pegs for hats and coats – the hobbit was fond of visitors. The tunnel wound 
+on and on, going fairly but not quite straight into the side of the hill – The 
+Hill, as all the people for many miles round called it – and many little round 
+doors opened out of it, first on one side and then on another. No going upstairs 
+for the hobbit: bedrooms, bathrooms, cellars, pantries (lots of these), 
+wardrobes (he had whole rooms devoted to clothes), kitchens, dining-rooms, 
+all were on the same floor, and indeed on the same passage. The best rooms 
+were all on the left-hand side (going in), for these were the only ones to have 
+windows, deep-set round windows looking over his garden, and meadows beyond, 
+sloping down to the river."
+
+
+# pronađite najčešće riječi u gornjem tekstu korištenjem sljedeće procedure
+# - uklonite interpunkcijske znakove iz teksta
+
+str_replace_all(tekst, "[:punct:]", "" ) %>% str_split('[:space:]') %>% unlist -> rezPom
+
+
+# - rastavite tekst na riječi po praznimama
+
+# - izbacite riječi od samo jednog ili dva znaka
+# - izbacite riječi 'the' i 'The'
+# - uz pomoć funkcije table izračunajte frekvenciju pojedinih riječi
+# - izbacite riječi koje se pojavljuju samo jedan put
+# - sortirajte rezultat uz pomoć funkcije sort
+# - ispišite konačni rezultat na zaslon
+
+
+```
+
+
+
+
