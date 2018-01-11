@@ -1,0 +1,21 @@
+USE [FERPI_Datalytics]
+GO
+
+/****** Object:  Table [dbo].[Drzava]    Script Date: 15.12.2017. 15:30:08 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Drzava](
+	[DrzavaID] [int] NOT NULL,
+	[NazivDrzava] [nvarchar](200) NOT NULL,
+ CONSTRAINT [PK_Drzava] PRIMARY KEY CLUSTERED 
+(
+	[DrzavaID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
